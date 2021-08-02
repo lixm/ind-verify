@@ -1,0 +1,26 @@
+
+USAGE DIRECTIVES:
+
+The formalization is performed with Coq 8.12.1 with the ssreflect extension.
+
+To compile the formalization on a *nix platform, run
+
+make
+
+To compile the formalization on a Windows platform,
+invoke coqc on the following files in order:
+
+sem.v tactics.v arith.v while.v while_ext.v fun.v
+
+Then, it should be possible to step through the proof scripts in Proof General.
+
+
+CONTENT OF THE DIRECTORY:
+
+arith.v    -- lemmas about arithmetic operations on natural numbers and integers
+lists.v	   -- lemmas about list operations
+tactics.v  -- custom tactics
+sem.v	   -- formalization of the technique, with proofs on its soundness and relative completeness
+while.v	   -- formalization of the While language and the verification of the factorial program
+while_ext.v -- formalization of the extended While language and the verification of the array-merging program
+fun.v	    -- formalization of the eager functional language and the verification of the list-merging program
