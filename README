@@ -1,4 +1,9 @@
 
+NB: 
+In the "develop" branch, there is an updated version of the formalization where 
+- "infer" is closer to the on-paper formulation, and
+- the directory is better structured. 
+
 USAGE DIRECTIVES:
 
 The formalization is performed with Coq 8.12.1 with the ssreflect extension.
