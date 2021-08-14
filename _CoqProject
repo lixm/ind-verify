@@ -1,0 +1,17 @@
+-Q src indv
+
+src/sem.v
+src/tactics.v
+src/arith.v
+src/lists.v
+src/while/lang.v
+src/while/st_upd.v
+src/while/fac.v
+src/while_ext/lang.v
+src/while_ext/arr_seq.v
+src/while_ext/sep.v
+src/while_ext/st_upd.v
+src/while_ext/arr_mg.v
+src/fun/lang.v
+src/fun/cfm.v
+src/fun/lst_mg.v

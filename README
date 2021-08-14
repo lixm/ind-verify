@@ -7,20 +7,22 @@ To compile the formalization on a *nix platform, run
 
 make
 
-To compile the formalization on a Windows platform,
-invoke coqc on the following files in order:
-
-sem.v tactics.v arith.v while.v while_ext.v fun.v
-
 Then, it should be possible to step through the proof scripts in Proof General.
 
 
 CONTENT OF THE DIRECTORY:
 
-arith.v    -- lemmas about arithmetic operations on natural numbers and integers
-lists.v	   -- lemmas about list operations
-tactics.v  -- custom tactics
-sem.v	   -- formalization of the technique, with proofs on its soundness and relative completeness
-while.v	   -- formalization of the While language and the verification of the factorial program
-while_ext.v -- formalization of the extended While language and the verification of the array-merging program
-fun.v	    -- formalization of the eager functional language and the verification of the list-merging program
+src/arith.v	-- lemmas about arithmetic operations on natural numbers and integers
+src/lists.v	-- lemmas about list operations
+src/tactics.v  	-- custom tactics
+src/sem.v	-- formalization of the technique, with proofs on its soundness and relative completeness
+src/while/lang.v	-- formalization of the While language
+src/while/st_upd.v 	-- lemmas about update of states 
+src/while/fac.v		-- verification of the factorial program 
+src/while_ext/lang.v	-- formalization of extended While 
+src/while_ext/arr_seq.v -- lemmas about arr_seq 
+src/while_ext/sep.v	-- lemmas about sep 
+src/while_ext/arr_mg.v	-- verification of the array-merging program 
+src/fun/lang.v		-- formalization of the eager functional language 
+src/fun/cfm.v		-- lemmas about canonical forms
+src/fun/lst_mg.v	-- verification of the list-merging program
