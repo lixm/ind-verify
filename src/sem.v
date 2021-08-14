@@ -29,48 +29,49 @@ Inductive infer {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}
       rule crs (c, r) ->
       (forall i p,
           nth_error crs i = Some p ->
-          (((~(exists P, phi (fst p) P)) /\ infer param phi p) \/
-           (exists P, phi (fst p) P /\ P (snd p)))
+          ((forall P, phi (fst p) P -> P (snd p)) /\
+           (~(exists P, phi (fst p) P) -> infer param phi p))
+          (* (((~(exists P, phi (fst p) P)) /\ infer param phi p) \/ *)
+          (*  (exists P, phi (fst p) P /\ P (snd p))) *)
       ) ->
       infer param phi (c, r).
 
-(* Perhaps due to the positioning of the subterm "infer param phi p", 
-   the generated ind principle is unusable. 
-   We prove a custome induction principle for infer. *)
+(* Check infer_ind. *)
+
+(* The generated induction principle for infer is unusable. *)
+(* We prove a custome induction principle for infer. *)
 Fixpoint infer_ind'
          (PARAM CFG RCFG: Type)
          (sem: Sem CFG RCFG)
-         (param: PARAM)
-         (phi: Spec PARAM CFG RCFG param)
+         (prm: PARAM)
+         (phi: Spec PARAM CFG RCFG prm)
          (P: (prod CFG RCFG) -> Prop)
          (eInf: forall c r crs,
              rule crs (c, r) ->
              (forall i p',
                  nth_error crs i = Some p' ->
-                 (((~(exists P', phi (fst p') P')) /\ infer param phi p') \/
-                  (exists P', phi (fst p') P' /\ P' (snd p')))) -> 
-             (forall i p', nth_error crs i = Some p' ->
-                          (((~(exists P', phi (fst p') P')) /\ P p') \/
-                           (exists P', phi (fst p') P' /\ P' (snd p'))) 
-             ) ->
+                 ((forall P', phi (fst p') P' -> P' (snd p')) /\
+                  (~(exists P', phi (fst p') P') -> infer prm phi p'))) ->
+             (forall i p',
+                 nth_error crs i = Some p' ->
+                 ((forall P', phi (fst p') P' -> P' (snd p')) /\
+                  (~(exists P', phi (fst p') P') -> P p'))) ->
              P (c, r)
          )
          (p: prod CFG RCFG)
-         (e: infer param phi p)
-  :
-    P p.
+         (e: infer prm phi p)
+  : P p.
   refine (match e with
           | Inf c r crs H_rule H' => _
-          end).  
+          end).
   apply eInf with (crs:=crs)=>//.
   move=> i p' H_ip'.
-  move: H'=>/(_ i p' H_ip')=> H'.
-  elim H'=> H'_case.
-  - left. case H'_case =>[H_ne H_infer]. apply: conj=>//.
-    apply infer_ind' with
-        (PARAM:=PARAM) (sem:=sem) (param:=param) (phi:=phi)=>//.
-  - right=>//.
-Defined.  
+  move: H'=> /(_ i p' H_ip')=> H'.
+  inversion H' as [H_allP H_nexP].
+  apply: conj=>//.
+  move /H_nexP.
+  apply: infer_ind'=>//.
+Defined.    
 
 Definition verif {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}
            (param : PARAM)
@@ -84,33 +85,28 @@ Definition valid {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}
   : (Spec PARAM CFG RCFG param) -> Prop :=
   (fun phi =>
      (forall c r P,
-         deriv (c, r) -> phi c P -> P r)). 
+         deriv (c, r) -> phi c P -> P r)).
 
 Lemma deriv_impl_infer {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}:
-  forall (param: PARAM) (phi: Spec PARAM CFG RCFG param) c r,
-    verif param phi -> deriv (c, r) -> infer param phi (c, r).
+  forall (prm: PARAM) (phi: Spec PARAM CFG RCFG prm) c r,
+    verif prm phi -> deriv (c, r) -> infer prm phi (c, r).
 Proof.
-  move=> param phi c r H_ver.
+  move=> prm phi c r H_ver. 
   move En: (c, r)=> p0 H_deriv.
   move: H_deriv c r En.
   elim.
   move=> c r lst H_rule H_der_i IH c0 r0 H_eq.
   apply: Inf. apply: H_rule.
   move=> i p' H_ip'.
-  move: IH =>/(_ i p' H_ip' (fst p') (snd p')).
-  rewrite -surjective_pairing=>/(_ (eq_refl _))=>IH.
-  have H_or: (exists P, phi (fst p') P) \/ ~(exists P, phi (fst p') P)
-    by apply: classic.
-  case H_or=> H_exnex.
-  - right.
-    case: H_exnex => [P H_phicP].
-    rewrite /verif in H_ver.
-    exists P=>/=. apply: conj=>//.
-    move: H_ver=>/(_ (fst p') (snd p') P).
-    rewrite -surjective_pairing.
-    move=> H_ver; apply: H_ver=>//=.
-  - left. apply: conj=>//.    
-Qed.
+  move: IH=> /(_ i p' H_ip' (fst p') (snd p')).
+  rewrite -surjective_pairing=> /(_ (eq_refl _))=> IH.
+  rewrite /verif in H_ver.
+  apply: conj.
+  - move=> P.
+    move: H_ver=> /(_ (fst p') (snd p') P).
+    rewrite -surjective_pairing. move/(_ IH)=>//.
+  - move=> H'. by apply: IH.
+Qed.     
     
 Theorem soundness {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}: 
   forall (param: PARAM) phi, verif param phi -> valid param phi.
@@ -128,51 +124,54 @@ Inductive phi_valid {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG} (param: PARAM):
   PV c: phi_valid param c (fun r => deriv (c, r)).
 
 Lemma phi_valid_infer_deriv {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}:
-  forall (param: PARAM) c r,
-    infer param (phi_valid param) (c, r) -> deriv (c, r).
+  forall (prm: PARAM) c r,
+    infer prm (phi_valid prm) (c, r) -> deriv (c, r).
 Proof.
-  move=> param c r.
+  move=> prm c r.
   move En: (c, r)=> p.
-  move En': (phi_valid param)=> phiprm.
+  move En': (phi_valid prm)=> phiprm.
   move=> H_infer. move: H_infer c r En.
   elim /infer_ind'.
   move=> c r crs H_rule H_i IH c0 r0 H_eq.
   apply: Der. apply: H_rule.
   move=> i p0 H_ip0.
-  move: IH=>/(_ i p0 H_ip0)=> IH. 
-  case IH=> [H_nex | H_ex].
-  - case H_nex=> [H_ne H_inf].
-    move: H_inf=>/(_ (fst p0) (snd p0)).
-    rewrite -surjective_pairing=>/(_ (eq_refl _))=>//.
-  - case H_ex=> [P' [H_phiprm H']].
-    rewrite <- En' in H_phiprm.
+  move: IH=>/(_ i p0 H_ip0). elim=> [H_allP' H_nexP'].
+  have: (exists P', phiprm (fst p0) P') \/ ~(exists P', phiprm (fst p0) P')
+    by apply classic.
+  elim=> [H_case_ex | H_case_nex].
+  - inversion H_case_ex as [P' H_phiprm].
+    move: H_allP'=> /(_ P').
+    rewrite -En' in H_phiprm. 
     inversion H_phiprm; subst.
-    rewrite -surjective_pairing in H'=>//.
-Qed. 
-      
+    move/(_ H_phiprm).
+    rewrite -surjective_pairing=>//.
+  - apply H_nexP' with (c:=fst p0) (r:=snd p0)=>//.
+    rewrite -surjective_pairing=>//.
+Qed.    
+        
 Lemma phi_valid_verifiable {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}:
-  forall (param: PARAM), verif param (phi_valid param).
+  forall (prm: PARAM), verif prm (phi_valid prm).
 Proof.
-  move=> param.
+  move=> prm.
   rewrite /verif. 
   move=> c r P H_infer H_phi_v.
   inversion H_phi_v; subst.
-  apply phi_valid_infer_deriv with (param0:=param)=>//.
+  apply phi_valid_infer_deriv with (prm0:=prm)=>//.
 Qed.  
   
 Definition spec_le {PARAM} {CFG} {RCFG}
-           (param: PARAM) (phi phi' : Spec PARAM CFG RCFG param) : Prop
+           (prm: PARAM) (phi phi' : Spec PARAM CFG RCFG prm) : Prop
   := 
   (forall c P, (phi c P ->
                 (exists (P': RCFG->Prop),
                     (forall r, P' r -> P r) /\ phi' c P'))). 
 
 Lemma valid_phi_le_phi_valid {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG} :
-  forall (param: PARAM) phi,
-    valid param phi -> spec_le param phi (phi_valid param).
+  forall (prm: PARAM) phi,
+    valid prm phi -> spec_le prm phi (phi_valid prm).
 Proof.
   rewrite /valid /spec_le. 
-  move=> param phi H_all c P H_phic.
+  move=> prm phi H_all c P H_phic.
   exists (fun r => deriv (c, r)).
   apply: conj. move=> r H_der.
   move: H_all=> /(_ c r P H_der H_phic)=>//.
@@ -180,14 +179,14 @@ Proof.
 Qed.
 
 Theorem completeness {PARAM} {CFG} {RCFG} {sem : Sem CFG RCFG}:
-  forall (param: PARAM) (phi : Spec PARAM CFG RCFG param),
-    valid param phi ->
-    (exists phi', valid param phi' /\
-                  spec_le param phi phi' /\
-                  verif param phi'). 
+  forall (prm: PARAM) (phi : Spec PARAM CFG RCFG prm),
+    valid prm phi ->
+    (exists phi', valid prm phi' /\
+                  spec_le prm phi phi' /\
+                  verif prm phi'). 
 Proof.
-  move=> param phi H_valid.
-  exists (phi_valid param).
+  move=> prm phi H_valid.
+  exists (phi_valid prm).
   apply: conj.
   rewrite /valid.
   move=> c r P H_der H_phi_valid.

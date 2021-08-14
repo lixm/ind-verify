@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect eqtype ssrnat ssrbool.
 Require Export Arith.
 Require Export ZArith.
 
-Require Import tactics. 
+From indv Require Import tactics. 
 
 Lemma sub_zero: forall n:nat, n - n = 0.
     by auto with arith. Qed.
@@ -48,8 +48,8 @@ Proof.
 Qed.
 
 Lemma le_1_lt: forall n m, n + 1 <= m -> n < m.
-Proof.
-  move=> n m; move: m n.
+Proof. 
+  move=> n m; move: m n. 
   elim.
   - move=> n H. destruct n. auto. auto.
   - move=> n IH.

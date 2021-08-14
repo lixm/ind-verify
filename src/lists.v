@@ -3,8 +3,7 @@ Require Import List.
 Require Import ZArith. 
 From mathcomp Require Import ssreflect ssrnat ssrbool eqtype seq.
 
-Require Import tactics.
-Require Import arith.
+From indv Require Import tactics arith.
 
 Definition occ (zs: seq Z) (z: Z) : nat :=
   count (fun z'=> Z.eqb z' z) zs.

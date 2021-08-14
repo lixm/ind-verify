@@ -3,7 +3,9 @@ Require Import Coq.Program.Basics.
 From mathcomp
      Require Import ssreflect eqtype ssrnat ssrbool seq.
 
-From indv Require Import arith.
+From indv Require Import sem arith.
+
+(* SYNTAX OF WHILEext *)
 
 Definition var_id : Type := nat. 
 Definition arr_id : Type := nat.
@@ -82,7 +84,7 @@ Canonical pm_eqMixin := EqMixin eqpmP.
 Canonical pm_eqType := EqType param pm_eqMixin. 
 
 
-(* SEMANTICS *) 
+(* SEMANTICS OF WHILEext *)  
 
 Definition var_state: Type := var_id -> (option Z).
 Definition arr_state: Type := var_id -> (option Z).
@@ -296,3 +298,11 @@ Inductive waf_rule :
     waf_rule [:: ((cm, (s'', floc_of st), p), st0') ]
              ((CmCall f aes xs, st, p), (s', floc_of st)) 
 . 
+
+
+Instance waf_Sem : Sem waf_config waf_rconfig :=
+  {
+  rule := waf_rule
+  }.
+
+
