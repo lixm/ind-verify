@@ -1,27 +1,26 @@
 
-all: sem.vo tactics.vo arith.vo lists.vo while.vo while_ext.vo fun.vo
+# KNOWNTARGETS will not be passed along to CoqMakefile
+KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2
+# KNOWNFILES will not get implicit targets from the final rule, and so
+# depending on them won't invoke the submake
+# Warning: These files get declared as PHONY, so any targets depending
+# on them always get rebuilt
+KNOWNFILES   := Makefile _CoqProject
 
-sem.vo: sem.v
-	coqc sem.v
+.DEFAULT_GOAL := invoke-coqmakefile
 
-tactics.vo: tactics.v
-	coqc tactics.v
+CoqMakefile: Makefile _CoqProject
+	$(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
 
-arith.vo: arith.v
-	coqc arith.v
+invoke-coqmakefile: CoqMakefile
+	$(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
 
-lists.vo: lists.v
-	coqc lists.v
+.PHONY: invoke-coqmakefile $(KNOWNFILES)
 
-while.vo: while.v
-	coqc while.v
+####################################################################
+##                      Your targets here                         ##
+####################################################################
 
-while_ext.vo: while_ext.v
-	coqc while_ext.v
-
-fun.vo: fun.v
-	coqc fun.v
-
-.PHONY: clean
-clean:
-	-rm *.vo *.glob *.vos *.vok
+# This should be the last rule, to handle any targets not declared above
+%: invoke-coqmakefile
+	@true
